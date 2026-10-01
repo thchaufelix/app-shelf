@@ -1,0 +1,18 @@
+{
+  "name": "shelf",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A local application browser. Drag apps in, tag them, pin them, rename them, and double-click to open.",
+  "scripts": {
+    "start": "node server.js",
+    "dist:win": "node scripts/build-win.mjs"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.9",
+    "postject": "1.0.0-alpha.6"
+  }
+}
