@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shelf — Application browser</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23241c15'/%3E%3Cpath d='M7 22.5h18M9 22.5V12.5h5v10M18 22.5V9h5v13.5' stroke='%23f3e2c2' stroke-width='1.7' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,640&family=Outfit:wght@360;470;560&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            paper: '#ebe3d4',
+            ink: '#241c15',
+            soft: '#6f6458',
+            faint: '#8d8173',
+            card: '#fffaf3',
+            line: '#e4d8c6',
+            brass: '#8d5a16',
+          },
+          fontFamily: {
+            sans: ['Outfit', 'Avenir Next', 'Segoe UI', 'sans-serif'],
+            display: ['Fraunces', 'Iowan Old Style', 'Palatino', 'serif'],
+          },
+          boxShadow: {
+            shelf: '0 16px 36px -24px rgba(58, 38, 16, 0.55)',
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="text-ink antialiased">
+  <div class="pointer-events-none fixed bottom-8 left-5 hidden select-none text-[11px] font-medium text-ink/30 lg:block">
+    <span class="rail inline-block">SHELF · LOCAL</span>
+  </div>
+
+  <div id="drop-overlay" class="drop-overlay pointer-events-none fixed inset-0 z-50 hidden items-center justify-center p-6">
+    <div class="drop-card w-full max-w-lg rounded-[28px] px-10 py-12 text-center shadow-shelf">
+      <p class="text-[11px] font-medium uppercase tracking-[0.28em] text-brass">Release to shelve</p>
+      <h2 class="wordmark mt-3 text-5xl text-ink">Drop it here</h2>
+      <p class="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-soft">The file name is kept as the name. You can pin it, tag it, or give it an alternate name after.</p>
+    </div>
+  </div>
+
+  <div class="app-shell mx-auto flex h-full w-[90%] flex-col px-5 pt-8 sm:px-8">
+    <header class="flex shrink-0 flex-col gap-6 border-b border-ink/10 pb-6 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <p class="text-[11px] font-medium uppercase tracking-[0.32em] text-brass">Application browser</p>
+        <h1 class="wordmark mt-1 text-6xl leading-none text-ink">Shelf</h1>
+        <p id="counts" class="mt-3 text-sm text-soft">Loading the shelf…</p>
+      </div>
+      <div class="flex w-full flex-col gap-3 sm:w-auto sm:items-end">
+        <div class="flex w-full items-center gap-2 sm:w-auto">
+          <label class="relative block min-w-0 flex-1 sm:w-72">
+            <span class="sr-only">Search</span>
+            <svg class="pointer-events-none absolute left-0 top-1/2 h-4 w-4 -translate-y-1/2 text-faint" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="11" cy="11" r="6.5"></circle>
+              <path d="M16 16.5 20 20.5" stroke-linecap="round"></path>
+            </svg>
+            <input id="search" class="search-input w-full border-0 border-b border-ink/20 bg-transparent py-2 pl-6 pr-2 text-sm placeholder:text-faint" type="search" placeholder="Search names, tags, paths" autocomplete="off" />
+          </label>
+          <div class="relative shrink-0">
+            <button id="add-btn" type="button" class="inline-flex items-center gap-2 rounded-full bg-ink px-4 py-2 text-sm font-medium text-[#f6efe4] transition hover:bg-brass">
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14" stroke-linecap="round"></path></svg>
+              Add
+            </button>
+            <div id="add-menu" class="absolute right-0 z-30 mt-2 hidden w-80 rounded-2xl border border-line bg-card p-3 shadow-shelf">
+              <button type="button" data-pick="application" class="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm hover:bg-[#f6efe4]">
+                Choose an application…
+                <span class="text-xs text-faint" data-place>Files</span>
+              </button>
+              <button type="button" data-pick="file" class="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm hover:bg-[#f6efe4]">
+                Choose a file…
+                <span class="text-xs text-faint" data-place>Files</span>
+              </button>
+              <form id="path-form" class="mt-1 border-t border-line px-1 pt-3">
+                <label class="block text-[11px] font-medium uppercase tracking-[0.16em] text-faint" for="path-input">Or paste a path</label>
+                <div class="mt-2 flex gap-2">
+                  <input id="path-input" class="field min-w-0 flex-1 rounded-xl border border-line bg-white px-3 py-2 text-sm" placeholder="Paste a full path" autocomplete="off" spellcheck="false" />
+                  <button class="rounded-xl bg-ink px-3 py-2 text-sm text-[#f6efe4]" type="submit">Add</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center justify-end gap-2">
+          <button id="quit-btn" type="button" class="hidden rounded-full border border-line px-4 py-2 text-sm hover:border-ink">Quit Shelf</button>
+          <div id="sort-bar" class="inline-flex items-center rounded-full border border-line bg-card p-0.5" role="group" aria-label="Sort items">
+            <button type="button" data-sort="name" class="sort-btn is-on rounded-full px-3 py-1.5 text-sm">Name</button>
+            <button type="button" data-sort="added" class="sort-btn rounded-full px-3 py-1.5 text-sm">Added</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="mt-5 flex shrink-0 flex-wrap items-center gap-2" id="filters"></div>
+
+    <div class="shelf-scroll mt-6 min-h-0 flex-1">
+      <main id="library" class="library-pane min-w-0"></main>
+    </div>
+
+    <footer class="mt-3 flex shrink-0 items-center justify-between border-t border-ink/10 py-4 text-xs text-faint">
+      <p id="footer-drag">Double-click an item to open it. Drag more in from your files.</p>
+      <p id="footer-stored">Stored in SQLite on this computer.</p>
+    </footer>
+  </div>
+
+  <div id="tw-safelist" class="hidden" aria-hidden="true">
+    <div class="app-shell mx-auto flex h-full w-[90%] flex-col px-5 pt-8 sm:px-8"></div>
+    <div class="shelf-scroll mt-6 min-h-0 flex-1"></div>
+    <div class="library-pane min-w-0"></div>
+    <section class="shelf-section shelf-section-x"></section>
+    <section class="shelf-section shelf-section-y"></section>
+    <div class="themed-scroll shelf-row shelf-row-x is-scrolling"></div>
+    <div class="themed-scroll shelf-row shelf-row-y is-scrolling"></div>
+    <div class="mb-8 mb-3 flex flex-wrap gap-3 text-[11px] font-medium uppercase tracking-[0.22em] text-faint"></div>
+    <div class="rounded-[28px] border border-dashed border-[#c9b79a] bg-card/70 px-8 py-16 text-center"></div>
+    <div class="mx-auto mb-6 flex w-40 flex-col gap-3"></div>
+    <div class="h-2 rounded-full bg-[#d9c7aa] bg-[#e4d3b8] bg-[#eadcc6]"></div>
+    <div class="wordmark text-4xl mx-auto mt-3 max-w-md w-4/5 text-sm leading-relaxed text-soft"></div>
+    <div class="rounded-2xl border border-dashed border-line px-6 py-10"></div>
+    <article class="tile group relative flex cursor-default select-none flex-col items-center px-3 pb-4 pt-8 text-center is-pinned is-missing is-selected is-bulk is-opening z-10"></article>
+    <button class="pin-btn absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full text-brass hover:bg-[#f6efe4]"></button>
+    <button class="bulk-check is-on absolute left-2 top-2 z-10 grid h-5 w-5 place-items-center rounded-[6px]"></button>
+    <div class="mb-3 flex shrink-0 items-center justify-between gap-2"></div>
+    <div class="flex flex-wrap items-center justify-end gap-2"></div>
+    <button class="rounded-full border border-line border-[#e4c4be] px-3 py-1 text-sm text-soft text-[#9f3d2f] hover:border-ink hover:border-brass hover:text-brass hover:border-[#9f3d2f] opacity-40"></button>
+    <span class="text-xs text-faint"></span>
+    <button class="inline-flex w-fit shrink-0 items-center gap-1.5 self-start rounded-full border border-line border-brass px-3 py-1.5 text-sm text-brass hover:border-brass hover:text-brass"></button>
+    <div class="relative mt-2 w-fit"></div>
+    <div class="icon-well relative mt-2 overflow-hidden"></div>
+    <span class="todo-badge hidden"></span>
+    <div class="monogram absolute inset-0 grid place-items-center"></div>
+    <img class="absolute inset-0 h-full w-full object-contain p-1.5" alt="" />
+    <h3 class="mt-3 line-clamp-2 w-full text-[14px] font-medium leading-tight"></h3>
+    <p class="mt-1 w-full truncate text-[11px] text-faint text-[#9f3d2f]"></p>
+    <div class="mt-2 flex max-w-full flex-wrap justify-center gap-1"></div>
+    <span class="tag-chip inline-flex items-center gap-1 truncate px-2 py-1"></span>
+    <button class="filter-chip is-on rounded-full border border-line bg-card px-3 py-1 text-sm text-soft hover:border-ink/30"></button>
+    <div class="inline-flex items-center rounded-full border border-line bg-card p-0.5"></div>
+    <button class="sort-btn is-on rounded-full px-3 py-1.5 text-sm"></button>
+    <div class="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto"></div>
+    <div class="flex items-start gap-2 rounded-lg px-1 py-1.5 hover:bg-[#f6efe4]"></div>
+    <button class="todo-check is-done mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-[5px]"></button>
+    <span class="min-w-0 flex-1 break-words text-sm leading-snug text-faint line-through"></span>
+    <button class="rounded-full px-1 leading-none text-faint hover:text-ink"></button>
+  </div>
+  <div id="inspector-overlay" class="inspector-overlay hidden" aria-hidden="true">
+    <aside id="inspector" class="inspector-dialog" role="dialog" aria-modal="true" aria-labelledby="insp-name">
+      <div class="inspector-body">
+      <div class="inspector-main themed-scroll">
+        <div class="relative w-fit">
+          <div class="icon-well relative overflow-hidden">
+            <div id="insp-monogram" class="monogram absolute inset-0 grid place-items-center"></div>
+            <img id="insp-icon" alt="" class="absolute inset-0 h-full w-full object-contain p-1.5" draggable="false" />
+          </div>
+          <span id="insp-todo-badge" class="todo-badge hidden"></span>
+        </div>
+        <p id="insp-kind" class="mt-4 text-[11px] font-medium uppercase tracking-[0.22em] text-brass"></p>
+        <h2 id="insp-name" class="wordmark mt-1 break-words text-3xl leading-tight"></h2>
+        <p id="insp-file" class="mt-1 hidden text-sm text-soft"></p>
+        <p id="insp-added" class="mt-1 text-sm text-soft"></p>
+        <p id="insp-missing" class="mt-2 hidden text-sm text-[#9f3d2f]">This file is no longer at its path.</p>
+
+        <label class="mt-6 block text-[11px] font-medium uppercase tracking-[0.16em] text-faint" for="insp-alias">Alternate name</label>
+        <input id="insp-alias" class="field mt-2 w-full rounded-xl border border-line bg-white px-3 py-2 text-sm" maxlength="120" autocomplete="off" />
+        <p class="mt-1.5 text-xs leading-relaxed text-faint">Leave this blank to use the file name.</p>
+
+        <button id="insp-pin" type="button" class="mt-6 inline-flex w-fit items-center gap-1.5 self-start rounded-full border border-line px-3 py-1.5 text-sm hover:border-brass hover:text-brass"></button>
+
+        <div class="mt-6">
+          <label class="text-[11px] font-medium uppercase tracking-[0.16em] text-faint" for="insp-tag">Tags</label>
+          <div id="insp-tags" class="mt-2 flex flex-wrap gap-1.5"></div>
+          <input id="insp-tag" class="field mt-2 w-full rounded-xl border border-line bg-white px-3 py-2 text-sm" placeholder="Add a tag and press Enter" maxlength="32" autocomplete="off" />
+          <div id="insp-suggestions" class="mt-2 flex flex-wrap gap-1.5"></div>
+        </div>
+
+        <div class="mt-6">
+          <p class="text-[11px] font-medium uppercase tracking-[0.16em] text-faint">Path</p>
+          <p id="insp-path" class="mt-2 break-all font-mono text-[12px] leading-relaxed text-soft"></p>
+        </div>
+
+        <div class="mt-5 flex flex-wrap gap-2">
+          <button id="insp-open" type="button" class="rounded-full bg-ink px-4 py-2 text-sm font-medium text-[#f6efe4] hover:bg-brass">Open</button>
+          <button id="insp-reveal" type="button" class="rounded-full border border-line px-4 py-2 text-sm hover:border-ink">Reveal</button>
+          <button id="insp-copy" type="button" class="rounded-full border border-line px-4 py-2 text-sm hover:border-ink">Copy path</button>
+        </div>
+        <button id="insp-remove" type="button" class="mt-5 text-sm text-[#9f3d2f] hover:underline">Remove from shelf</button>
+        <p class="mt-1 text-xs text-faint">Removing an item does not delete the file.</p>
+      </div>
+
+      <div class="inspector-todos">
+        <div class="flex items-baseline justify-between gap-2">
+          <label class="text-[11px] font-medium uppercase tracking-[0.16em] text-faint" for="insp-todo">To-dos</label>
+          <span id="insp-todo-count" class="text-[11px] text-faint"></span>
+        </div>
+        <div id="insp-todos" class="themed-scroll mt-3 flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto"></div>
+        <input id="insp-todo" class="field mt-3 w-full shrink-0 rounded-xl border border-line bg-white px-3 py-2 text-sm" placeholder="Add a to-do and press Enter" maxlength="120" autocomplete="off" />
+      </div>
+      </div>
+    </aside>
+  </div>
+  <div id="toast" role="status" data-show="false" class="pointer-events-none fixed bottom-6 left-1/2 z-[45] max-w-md -translate-x-1/2 translate-y-2 rounded-full bg-ink px-4 py-2 text-sm text-[#f6efe4] opacity-0 shadow-shelf transition"></div>
+  <script src="/app.js" type="module"></script>
+</body>
+</html>
